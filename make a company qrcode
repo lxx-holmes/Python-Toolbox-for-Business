@@ -1,0 +1,59 @@
+import qrcode
+from PIL import Image
+import csv
+
+with open('C:/Users/Susie X Li/Desktop/company_taxinfo.csv','r',encoding='utf-8-sig') as f: #注意这里加了一个encoding=utf-8-sig，这是因为csv里内容是中文，用utf-8编码才能显示，否则报错。
+    reader=csv.reader(f)
+    tax_info=[]
+    for row in reader:
+        tax_info.append(row)
+'''
+现在，tax_info是一个list,长这样：
+[['名称', '中国国际金融股份有限公司'], ['税号', 'xxxxxxxxxxxxxxx86U'], ['单位地址', '北京市朝阳区建国门外大街x号'], ['电话', '010-65xxxxxx']]     
+'''
+
+text='' #定义一个字符串text
+for row in tax_info:
+    text+=row[0]+': '+row[1]
+    text+='\n'
+'''
+现在，text是一段文字，有四行，长这样：
+名称: 中国国际金融股份有限公司
+税号: xxxxxxxxxxxxxxx86U
+单位地址: 北京市朝阳区建国门外大街x号
+电话: 010-65xxxxxx
+'''
+
+def getQRcode(data, file_name,factor):
+    #生成一个qrcode框架
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_H,
+        box_size=5,
+        border=4,
+    )
+    # 添加数据:在本程序中，我们将放入上面的四行文字，也就是text这个字符串。
+    qr.add_data(data)
+    # 填充数据
+    qr.make(fit=True)
+    # 生成图片：白底蓝字，可以自行修改。至此，一个二维码图片已经生成了~图片的名称为img
+    img = qr.make_image(fill_color="blue", back_color="white")
+
+    #下面要做的是把公司logo放到二维码图片的正中央~
+    img_height,img_width=img.size #查询img这个图片的尺寸。注意内容越多，尺寸越大（像素点越多）。
+    icon_height=int(img_height/factor) #根据img的大小，定义中间icon的大小，icon大小为img除以一个常数factor，可以自己定义。
+    icon_width=int(img_width/factor)
+    start_point=find_start_point(img_width,icon_width) #通过find_start_point这个function，找到icon的左上角那个点。这个方法是自己定义的，见下方。
+    icon = Image.open('C:/Users/Susie X Li/Desktop/company_logo.jpg') #打开company logo图片
+    icon=icon.resize((icon_height,icon_width),Image.ANTIALIAS) #把logo图片resize到二维码图片/常数factor这个大小
+    img.paste(icon,(start_point,start_point),mask=None) #把icon按照算好的左上角位置，贴到二维码图片上
+    img.save(file_name) #储存文件，搞定！
+
+def find_start_point(img_width,icon_width):
+    start_point=int(img_width*0.5-icon_width*0.5)
+    return start_point
+'''这个方法是自己定义的，根据二维码尺寸和logo尺寸，找到logo的左上角坐标点。
+这个方法又被嵌套进了getQRcode这个方法。'''
+
+getQRcode(text,'C:/Users/Susie X Li/Desktop/company_qrcode.png',3)
+#用我们自己定义的getQRcode方法，输入三个变量：文本内容、储存位置、二维码图片与中央icon图片的比例。搞定！
