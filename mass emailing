@@ -1,0 +1,53 @@
+#首先，import需要的模块们。Python的强大主要在于有大量别人设计好的模块，随取随用！
+import smtplib
+import csv
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
+from email.header import Header
+
+#第二步，登录自己的邮箱：
+from_addr='susie@163.com'
+password = 'xxxx'
+    #password不是你的登录密码。是在邮箱-设置-开启SMTP服务后，获得的授权码。
+smtp_server='smtp.163.com'
+    #smtp一般在登录邮箱后-设置里可以查到哦。或自行百度。
+server = smtplib.SMTP()
+server.connect(smtp_server, 25)
+    #25是端口号，同样是在邮箱设置里找到的。
+server.login(from_addr, password) 
+
+#第三步，打开csv文件，里面有写好的团队名称和各团队老板地址
+with open('C:/Users/Susie X Li/Desktop/email_addrs.csv','r') as f:
+    reader=csv.reader(f)
+    to_send=[]
+    for row in reader:
+        to_send.append(row)
+    to_send=to_send[1:]
+        #现在，to_send是一个list,里面是一个个子list，子list第一个元素是团队名称，后面的元素是收件人地址。
+
+#第四步：用一个for循环，把一个个团队的报告分别发出去，bingo!
+    for row in to_send:
+        text='''Dear Department Head,
+附件是您的团队{}本月的管理报告，请查收！
+财务部，Susie'''.format(row[0])
+        #邮件正文自动编写，{}中内容自动替换为各个团队名称
+        to_addrs=','.join(row[1:])
+        #各团队收件人自动从csv文件中抓取
+        msg = MIMEMultipart()
+        msg.attach(MIMEText(text,'plain','utf-8'))
+        msg['From'] = Header(from_addr)
+        #显示发件人名称为发件人的邮箱地址
+        msg['To'] = Header(to_addrs)
+        #显示收件人名称为收件人的邮箱地址
+        msg['Subject'] = Header('2020.03 Department PL-{}'.format(row[0]))
+        #邮件标题自动编写，{}中内容自动替换为各个团队名称
+        att=MIMEApplication(open('C:/Users/Susie X Li/Desktop/{}.csv'.format(row[0]),'rb').read())
+        att.add_header('Content-Disposition', 'attachment', filename='{}.csv'.format(row[0]))
+        msg.attach(att)
+        #邮件附件自动添加，使用{}保证添加的附件为对应的团队的报告
+        server.sendmail(from_addr, to_addrs, msg.as_string())
+        #邮件发送出去啦！
+
+server.quit()
+#关掉邮箱，大功告成！
